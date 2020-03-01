@@ -32,6 +32,8 @@ def MeanFilter(im, rows, cols, pixel_factor):
     done = 0
 
     for x in range (0, rows - num_pixels_last_row + 1):
+        if done == 1:
+            break
         for y in range (0, cols-num_pixels_last_col + 1):
             
             # Handles edge case for pixles in the bottom right corner and right hand side 
@@ -40,6 +42,7 @@ def MeanFilter(im, rows, cols, pixel_factor):
                     for i in range (0, rows-x):
                         for j in range (0, cols-y):
                             im_filter_one[x+i, y+j] = im_filter_one[x-1, y-1]
+                    done = 1
                     break
                 else:
                     for i in range (0, rows-x):
@@ -98,7 +101,7 @@ def SmoothingFilter(im, rows, cols, pixel_factor):
     return im_filter_two  
 
 #############################################
-# Second Filter
+# Third Filter
 #############################################
 def LimitPaletteSize(im, rows, cols, num_clusters):
     im_filter_two = im.reshape(rows*cols, im.shape[2])
