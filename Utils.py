@@ -6,57 +6,35 @@ import pdb
 # Helper Function for First Filter
 # Use Mean Filtering technique to create super-samples
 #############################################
-def SetMean(im_filter_one, x, y, pixel_factor):
-    mean = np.zeros(im_filter_one.shape[2])
+def SetMean(im, x, y, pixel_factor):
+    mean = np.zeros(im.shape[2])
     num_cells = pixel_factor ** 2
 
     for i in range (0, pixel_factor):
         for j in range (0, pixel_factor):
-            mean += im_filter_one[x+i, y+j]
+            mean += im[x+i, y+j]
 
     mean = np.divide(mean, num_cells)
 
-    for i in range (0, pixel_factor):
-        for j in range (0, pixel_factor):
-            im_filter_one[x+i, y+j] = mean
+    return mean
 
 #############################################
 # First Filter
 #############################################
 def MeanFilter(im, rows, cols, pixel_factor):
-    im_filter_one = np.copy(im)
+    filter_one_rows = int(rows/pixel_factor)
+    filter_one_cols = int(cols/pixel_factor)
+    im_filter_one = np.zeros((filter_one_rows, filter_one_cols, im.shape[2]), dtype=np.uint8)
 
     num_pixels_last_row = rows % pixel_factor
     num_pixels_last_col = cols % pixel_factor
 
-    done = 0
-
-    for x in range (0, rows - num_pixels_last_row + 1):
-        if done == 1:
-            break
-        for y in range (0, cols-num_pixels_last_col + 1):
-            
-            # Handles edge case for pixles in the bottom right corner and right hand side 
-            if x + pixel_factor >= rows:
-                if y + pixel_factor >= cols:
-                    for i in range (0, rows-x):
-                        for j in range (0, cols-y):
-                            im_filter_one[x+i, y+j] = im_filter_one[x-1, y-1]
-                    done = 1
-                    break
-                else:
-                    for i in range (0, rows-x):
-                        im_filter_one[x+i, y] = im_filter_one[x-1, y]
-                    continue
-
-            # Handles edge case for pixles on the bottom side of the image
-            if y + pixel_factor >= cols:
-                for j in range (0, cols-y):
-                    im_filter_one[x, y+j] = im_filter_one[x, y-1]
-                continue
-
+    for x in range (0, rows - num_pixels_last_row):
+        for y in range (0, cols-num_pixels_last_col):
             if x % pixel_factor == 0 and y % pixel_factor == 0:
-                SetMean(im_filter_one, x, y, pixel_factor)
+                i = int(x / pixel_factor)
+                j = int(y / pixel_factor)
+                im_filter_one[i, j] = SetMean(im, x, y, pixel_factor)
 
     return im_filter_one
 
@@ -64,14 +42,14 @@ def MeanFilter(im, rows, cols, pixel_factor):
 # Helper Function for Second Filter
 # Use Mean Filtering on super-samples to smooth image
 #############################################
-def SmoothCell(im, im_filter_two, rows, cols, x, y, pixel_factor):
+def SmoothCell(im, rows, cols, x, y):
     cell_colour = np.zeros(im.shape[2], dtype=np.uint32)
     num_samples = 0
 
-    for i in range (x-pixel_factor, x+pixel_factor+1, pixel_factor):
+    for i in range (x-1, x+2):
         if i < 0 or i >= rows:
             continue
-        for j in range (y-pixel_factor, y+pixel_factor+1, pixel_factor):
+        for j in range (y-1, y+2):
             if j < 0 or j >= cols:
                 continue
             cell_colour += im[i, j]
@@ -79,31 +57,31 @@ def SmoothCell(im, im_filter_two, rows, cols, x, y, pixel_factor):
 
     cell_colour = np.divide(cell_colour, num_samples)
 
-    for i in range (0, pixel_factor):
-        for j in range (0, pixel_factor):
-            im_filter_two[x+i, y+j] = cell_colour
+    return cell_colour
 
 #############################################
 # Second Filter
 #############################################
-def SmoothingFilter(im, rows, cols, pixel_factor):
+def SmoothingFilter(im):
     im_filter_two = np.copy(im)
 
-    num_pixels_last_row = rows % pixel_factor
-    num_pixels_last_col = cols % pixel_factor
+    rows = im.shape[0]
+    cols = im.shape[1]
 
     for x in range (0, rows):
         for y in range (0, cols):
-            if x < rows - num_pixels_last_row and y < cols - num_pixels_last_col:
-                if x % pixel_factor == 0 and y % pixel_factor == 0:
-                    SmoothCell(im, im_filter_two, rows, cols, x, y, pixel_factor)
+            cell_colour = SmoothCell(im, rows, cols, x, y)
+            im_filter_two[x, y] = cell_colour
 
     return im_filter_two  
 
 #############################################
 # Third Filter
 #############################################
-def LimitPaletteSize(im, rows, cols, num_clusters):
+def LimitPaletteSize(im, num_clusters):
+    rows = im.shape[0]
+    cols = im.shape[1]
+
     im_filter_two = im.reshape(rows*cols, im.shape[2])
 
     print ("Starting K-Means Clustering")
@@ -117,5 +95,6 @@ def LimitPaletteSize(im, rows, cols, num_clusters):
         im_filter_three[i] = sorted_im.cluster_centers_[sorted_im.labels_[i]]
 
     im_filter_three = im_filter_three.reshape(rows, cols, im.shape[2])
+
     return im_filter_three
 
