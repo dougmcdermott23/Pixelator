@@ -1,3 +1,4 @@
+import colorsys
 from sklearn.cluster import KMeans
 import numpy as np
 import pdb
@@ -98,3 +99,31 @@ def LimitPaletteSize(im, num_clusters):
 
     return im_filter_three
 
+#############################################
+# Fourth Filter
+#############################################
+def Saturation(im, saturation):
+    im_filter_four = np.copy(im)
+
+    rows = im.shape[0]
+    cols = im.shape[1]
+
+    for x in range (0, rows):
+        for y in range (0, cols):
+            cell_colour = np.array([im[x, y, 0], im[x, y, 1], im[x, y, 2]])
+            cell_colour = np.divide(cell_colour, 255)
+
+            hsv = colorsys.rgb_to_hsv(cell_colour[0], cell_colour[1], cell_colour[2])
+
+            new_saturation = hsv[1] + saturation
+            new_saturation = min(new_saturation, 1)
+            new_saturation = max(new_saturation, 0)
+
+            rgb = np.array(colorsys.hsv_to_rgb(hsv[0], new_saturation, hsv[2]))
+            rgb = rgb*255
+
+            im_filter_four[x, y, 0] = rgb[0]
+            im_filter_four[x, y, 1] = rgb[1]
+            im_filter_four[x, y, 2] = rgb[2]
+
+    return im_filter_four

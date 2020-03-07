@@ -15,6 +15,7 @@ def Main(argv):
     pixel_factor = int(argv[2])
     smooth_iterations = int(argv[3])
     palette_size = int(argv[4])
+    saturation = float(argv[5])
 
     file_name = "images\{}".format(image_name)
     im = np.array(Image.open(file_name))
@@ -28,6 +29,9 @@ def Main(argv):
 
     if pixel_factor > rows or pixel_factor > cols:
         pixel_factor = min(rows, cols)
+
+    saturation = min(saturation, 1)
+    saturation = max(saturation, -1)
 
     # First filter - Mean Filter
     print ("Applying Mean Filter")
@@ -43,7 +47,13 @@ def Main(argv):
     im_filter_three = np.copy(im_filter_two)
     if palette_size > 0:
         print ("Applying Palette Size Filter")
-        im_filter_three = utils.LimitPaletteSize(im_filter_two, palette_size)
+        im_filter_three = utils.LimitPaletteSize(im_filter_three, palette_size)
+
+    # Fourth Filter - Change saturation
+    im_filter_four = np.copy(im_filter_three)
+    if saturation != 0:
+        print ("Applying Saturation Filter")
+        im_filter_four = utils.Saturation(im_filter_four, saturation)
 
     num_pixels_last_row = rows % pixel_factor
     num_pixels_last_col = cols % pixel_factor
@@ -51,12 +61,12 @@ def Main(argv):
 
     # Convert the new image size to the same size as the original image (approximatley)
     # Loop through each pixel of the new image
-    for x in range (0, im_filter_three.shape[0]):
-        for y in range (0, im_filter_three.shape[1]):
+    for x in range (0, im_filter_four.shape[0]):
+        for y in range (0, im_filter_four.shape[1]):
             # Copy the pixel, pixel_factor^2 times, to create a super-sample
             for i in range (0, pixel_factor):
                 for j in range (0, pixel_factor):
-                    im_final[x*pixel_factor + i, y*pixel_factor + j] = im_filter_three[x, y]
+                    im_final[x*pixel_factor + i, y*pixel_factor + j] = im_filter_four[x, y]
     
     # Convert numpy array to image
     pil_file_name = "images\pixelate_{}".format(image_name)
