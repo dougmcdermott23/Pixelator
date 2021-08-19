@@ -6,8 +6,8 @@ import sys
 import pdb
 
 def Main(argv):
-    if len(argv) < 5:
-        print ("Parameters required: image_name, pixel_factor, smooth_iterations, palette_size")
+    if len(argv) < 6:
+        print ("Parameters required: image_name, pixel_factor, smooth_iterations, palette_size, saturation")
         return
 
     # Parse command line for image information and convert image to numpy array
